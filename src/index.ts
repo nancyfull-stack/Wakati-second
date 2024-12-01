@@ -1,64 +1,56 @@
 import { Hono } from "hono";
-import { logger } from "hono/logger";
-import { cors } from "hono/cors";
+import { calculateReadingTime } from "./utils";
+import html from "./index.html";
+
+
 
 const app = new Hono();
 
-// Middlewares
-app.use(logger()); // Enable logger
-app.use(cors());
+let defaultWPM = 238;
 
-const defaultWPM = 238;
-
-function calculateSpeed(
-  text: string,
-  wpm: number
-): { wpm: number; seconds: number; minutes: number; wordsCount: number } {
-  const wordsCount = text.trim().split(/\s+/).length;
-  const seconds: number = (wordsCount / wpm) * 60;
-  const minutes: number = seconds / 60;
-  return {
-    wpm,
-    seconds: Number(seconds.toFixed(2)),
-    minutes: Number(minutes.toFixed(2)),
-    wordsCount,
-  };
-}
-
-// MARK: Routes
-app.get("/status", (c) => {
-  return c.json({ message: "API is active 🔥" });
-});
-
+// ====== MARK: API routes
+// @desc Root route
+// @route GET /
 app.get("/", (c) => {
-  const text = c.req.query("text");
-  const wpm = c.req.query("wpm");
-
-  if (!text) {
-    return c.json({ message: "Please provide text" }, 400);
-  }
-
-  const result = calculateSpeed(text, wpm ? Number(wpm) : defaultWPM);
-
-  return c.json(result);
+  return c.html(html);
 });
 
-app.post("/api/calculatr", async (c) => {
-  const { text, wpm } = await c.req.json();
-
-  if (!text) {
-    return c.json({ message: "Please provide text" }, 400);
-  }
-
-  const result = calculateSpeed(text, Number(wpm) || defaultWPM);
-
-  return c.json(result);
-
-  
+// @desc API status
+// @route GET /status
+// @access public
+app.get("/status", (c) => {
+  return c.json({ message: "API is active 🚀", status: "ok" });
 });
 
+// @desc Calculate reading time
+// @route GET /api/calculate
+// @access public
+app.get("/api/calculate", (c) => {
+  const sentence = c.req.query("sentence");
+  const wpm = c.req.query("wpm"); // Optional
 
+  if (!sentence) {
+    return c.json({ message: "Field sentence is required" }, 400);
+  }
 
+  const readingTime = calculateReadingTime(sentence, Number(wpm) || defaultWPM);
 
+  return c.json({ ...readingTime });
+});
+
+// @desc Calculate reading time
+// @route POST /api/calculate
+// @access public
+app.post("/api/calculate", async (c) => {
+  const { sentence, wpm } = await c.req.json();
+
+  if (!sentence) {
+    return c.json({ message: "Field sentence is required" }, 400);
+  }
+
+  const readingTime = calculateReadingTime(sentence, Number(wpm) || defaultWPM);
+
+  return c.json({ ...readingTime });
+});
 
 export default app;
