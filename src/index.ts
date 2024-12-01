@@ -43,7 +43,7 @@ app.get("/", (c) => {
   return c.json(result);
 });
 
-app.post("/", async (c) => {
+app.post("/api/calculatr", async (c) => {
   const { text, wpm } = await c.req.json();
 
   if (!text) {
@@ -53,7 +53,11 @@ app.post("/", async (c) => {
   const result = calculateSpeed(text, Number(wpm) || defaultWPM);
 
   return c.json(result);
+
+  
 });
+
+
 
 
 
